@@ -3,6 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 dotenv.config();
 
+import dns from 'dns';
+dns.setServers(['8.8.8.8', '1.1.1.1']);
+
 import connectDB from './db_config/mongo_connect.js';
 
 const app = express();
@@ -12,7 +15,10 @@ const PORT = process.env.PORT || 3000;
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  credentials: true
+}));
 app.use(express.json());
 
 // Swagger Setup
@@ -40,6 +46,6 @@ import { errorHandler } from './src/utils/errorHandler.js';
 app.use(errorHandler);
 
 // Start Server
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on port ${PORT}`);
 });
