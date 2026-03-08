@@ -1,0 +1,235 @@
+openapi: 3.0.0
+info:
+  title: Leave Management System API
+  description: Backend API for Simple Leave Management System built with Node.js and MongoDB
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Authentication
+      security: [] # Unprotected route
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - firstName
+                - lastName
+                - empId
+                - dob
+                - email
+                - password
+              properties:
+                firstName:
+                  type: string
+                  example: John
+                lastName:
+                  type: string
+                  example: Doe
+                empId:
+                  type: string
+                  example: EMP001
+                dob:
+                  type: string
+                  format: date
+                  example: 1990-01-01
+                email:
+                  type: string
+                  example: john@example.com
+                password:
+                  type: string
+                  example: password123
+                role:
+                  type: string
+                  example: employee
+                  enum: [employee, employer]
+      responses:
+        '201':
+          description: User successfully registered
+        '400':
+          description: Invalid user data or user exists
+
+  /api/auth/login:
+    post:
+      summary: Authenticate a user and get tokens
+      tags:
+        - Authentication
+      security: [] # Unprotected route
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: john@example.com
+                password:
+                  type: string
+                  example: password123
+      responses:
+        '200':
+          description: User successfully authenticated
+        '401':
+          description: Invalid email or password
+
+  /api/auth/refresh:
+    post:
+      summary: Refresh an expired access token
+      tags:
+        - Authentication
+      security: [] # Unprotected route
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  example: "eyJhbGciOiJI..."
+      responses:
+        '200':
+          description: New access token generated
+        '401':
+          description: Not authorized, token failed or expired
+
+  /api/leaves/apply:
+    post:
+      summary: Apply for a new leave
+      tags:
+        - leaves-employee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - leaveType
+                - startDate
+                - endDate
+                - reason
+              properties:
+                leaveType:
+                  type: string
+                  example: Sick Leave
+                startDate:
+                  type: string
+                  format: date
+                  example: 2026-03-10
+                endDate:
+                  type: string
+                  format: date
+                  example: 2026-03-12
+                reason:
+                  type: string
+                  example: Flu symptoms
+      responses:
+        '201':
+          description: Leave request successfully submitted
+        '401':
+          description: Not authorized
+        '403':
+          description: Forbidden - Not an employee
+
+  /api/leaves/my-leaves:
+    get:
+      summary: View all leaves made by the logged-in employee
+      tags:
+        - leaves-employee
+      responses:
+        '200':
+          description: Returns an array of leave requests
+        '401':
+          description: Not authorized
+        '403':
+          description: Forbidden - Not an employee
+
+  /api/leaves/dashboard:
+    get:
+      summary: Get leave analytics dashboard
+      tags:
+        - leaves-employer
+      responses:
+        '200':
+          description: Returns an object containing analytics data (total counts, by status, by type, and recent pendings)
+        '401':
+          description: Not authorized
+        '403':
+          description: Forbidden - Not an employer
+
+  /api/leaves/all:
+    get:
+      summary: View all leaves made by all employees
+      tags:
+        - leaves-employer
+      responses:
+        '200':
+          description: Returns an array of all leave requests (populated with employee info)
+        '401':
+          description: Not authorized
+        '403':
+          description: Forbidden - Not an employer
+
+  /api/leaves/{id}/status:
+    patch:
+      summary: Update a leave request status
+      tags:
+        - leaves-employer
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The MongoDB ObjectId of the leave request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [Approved, Rejected]
+                  example: Approved
+      responses:
+        '200':
+          description: Successfully updated the leave status
+        '400':
+          description: Invalid status
+        '401':
+          description: Not authorized
+        '403':
+          description: Forbidden - Not an employer
+        '404':
+          description: Leave request not found
